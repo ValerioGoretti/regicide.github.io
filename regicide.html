@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regicide — Solo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&display=swap');
+
+:root {
+  --ink: #1a1a1a;
+  --parchment: #f8f5f0;
+  --parchment-dark: #ede8e0;
+  --parchment-mid: #f2ede5;
+  --crimson: #c0392b;
+  --gold: #8a6d1a;
+  --gold-light: #b8860b;
+  --forest: #1e5c2e;
+  --shadow: rgba(0,0,0,0.15);
+  --red-suit: #c0392b;
+  --black-suit: #1a1a1a;
+  --border-ornate: #c8b88a;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: #2c2c2c;
+  font-family: 'Lato', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+  min-height: 100vh;
+}
+
+/* ── TITLE ── */
+.title-bar {
+  text-align: center;
+  padding: 12px 0 16px;
+  position: relative;
+}
+.title-bar h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #f0f0f0;
+  letter-spacing: 0.05em;
+}
+.title-bar .subtitle {
+  color: #aaa;
+  font-size: 0.88rem;
+  margin-top: 2px;
+}
+.divider {
+  width: 100%;
+  height: 1px;
+  background: #444;
+  margin: 8px 0;
+}
+
+/* ── LAYOUT ── */
+.game-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr 200px;
+  grid-template-rows: auto auto auto auto;
+  gap: 12px;
+}
+
+/* ── PANELS ── */
+.panel {
+  background: var(--parchment);
+  border: 2px solid var(--border-ornate);
+  border-radius: 4px;
+  padding: 12px;
+  box-shadow: 0 2px 6px var(--shadow);
+}
+.panel::before { display: none; }
+.panel-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #666;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+/* ── ENEMY AREA ── */
+.enemy-area {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+}
+
+.enemy-card-wrap { position: relative; flex-shrink: 0; }
+
+.big-card {
+  width: 100px;
+  height: 140px;
+  border-radius: 8px;
+  border: 3px solid var(--border-ornate);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 30px var(--shadow);
+  font-size: 2rem;
+  font-weight: bold;
+  position: relative;
+  overflow: hidden;
+}
+.big-card.face-up { background: var(--parchment); }
+.big-card.face-down {
+  background: linear-gradient(135deg, #1e1208, #2a1a08);
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(201,149,42,0.08) 5px, rgba(201,149,42,0.08) 10px);
+}
+.big-card .card-rank {
+  font-family: 'Lato', system-ui, sans-serif; font-weight: 700;
+  font-size: 2.2rem;
+  line-height: 1;
+}
+.big-card .card-suit { font-size: 2rem; line-height: 1; }
+.big-card.red { color: var(--red-suit); }
+.big-card.black { color: var(--black-suit); }
+
+.enemy-info { flex: 1; }
+.enemy-name {
+  font-family: 'Lato', system-ui, sans-serif; font-weight: 700;
+  font-size: 1.4rem;
+  color: var(--crimson);
+  margin-bottom: 6px;
+}
+.enemy-name .suit-icon { font-size: 1.2rem; }
+
+.hp-bar-wrap { margin-bottom: 8px; }
+.hp-label { font-size: 0.82rem; color: var(--ink); margin-bottom: 3px; font-style: italic; }
+.hp-bar {
+  height: 14px;
+  background: var(--parchment-dark);
+  border: 1px solid var(--gold);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--forest), #2d5c2d);
+  transition: width 0.4s ease;
+}
+.hp-fill.danger { background: linear-gradient(90deg, #6b0000, var(--crimson)); }
+
+.enemy-stats {
+  display: flex; gap: 16px;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+.enemy-stat { text-align: center; }
+.enemy-stat-val {
+  font-family: 'Lato', system-ui, sans-serif; font-weight: 700;
+  font-size: 1.3rem;
+  color: var(--crimson);
+  display: block;
+}
+.enemy-stat-lbl { font-style: italic; color: #6a5030; font-size: 0.75rem; }
+
+.immunity-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  background: rgba(139,26,26,0.1);
+  border: 1px solid rgba(139,26,26,0.4);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  color: var(--crimson);
+  font-style: italic;
+  margin-top: 4px;
+}
+.immunity-cancelled {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.castle-info {
+  text-align: center;
+}
+.castle-stack {
+  position: relative;
+  width: 70px;
+  height: 100px;
+  margin: 0 auto 6px;
+}
+.castle-stack .cs {
+  position: absolute;
+  width: 62px; height: 90px;
+  border-radius: 5px;
+  border: 2px solid var(--border-ornate);
+  background: linear-gradient(135deg, #1e1208, #2a1a08);
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(201,149,42,0.08) 4px, rgba(201,149,42,0.08) 8px);
+}
+.castle-stack .cs:nth-child(1) { top:8px; left:8px; opacity:0.3; }
+.castle-stack .cs:nth-child(2) { top:4px; left:4px; opacity:0.55; }
+.castle-stack .cs:nth-child(3) { top:0; left:0; opacity:1; }
+.castle-count {
+  font-family: 'Lato', system-ui, sans-serif; font-weight: 700;
+  font-size: 1.4rem;
+  color: var(--gold);
+}
+
+/* ── TAVERN / DISCARD ── */
+.decks-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.deck-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.small-stack { position: relative; width: 70px; height: 96px; margin: 0 auto; }
+.small-stack .ss {
+  position: absolute;
+  width: 62px; height: 88px;
+  border-radius: 6px;
+  border: 2px solid var(--border-ornate);
+}
+.small-stack .ss:nth-child(1) { top:6px; left:6px; opacity:0.25; background: var(--parchment-dark); }
+.small-stack .ss:nth-child(2) { top:3px; left:3px; opacity:0.5; background: var(--parchment-dark); }
+.small-stack .ss.top {
+  top:0; left:0;
+  background: linear-gradient(135deg, #1e1208, #2a1a08);
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(201,149,42,0.08) 4px, rgba(201,149,42,0.08) 8px);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s;
+  font-size: 1.4rem; color: rgba(201,149,42,0.5);
+}
+.small-stack .ss.top:hover { transform: translateY(-3px); }
+.small-stack .ss.top.empty { opacity: 0.3; cursor: default; }
+.small-stack .ss.top.empty:hover { transform: none; }
+.small-stack .ss.discard-top {
+  top:0; left:0;
+  background: var(--parchment);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-weight: bold;
+}
+.small-stack .ss.discard-top.red { color: var(--red-suit); }
+.small-stack .ss.discard-top.black { color: var(--black-suit); }
+.small-stack .ss.discard-top.empty-discard {
+  background: var(--parchment-dark);
+  color: #9a8060;
+  font-size: 0.7rem;
+  font-style: italic;
+}
+.deck-count {
+  font-family: 'Lato', system-ui, sans-serif; font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--gold);
+}
+.deck-sublabel { font-style: italic; font-size: 0.72rem; color: #6a5030; text-align: center; }
+
+.hearts-badge {
+  background: rgba(139,26,26,0.1);
+  border: 1px solid rgba(139,26,26,0.3);
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  color: var(--crimson);
+  font-style: italic;
+  text-align: center;
+}
+
+/* ── HAND ── */
+.hand-panel {
+  grid-column: 1 / -1;
+}
+.hand-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 108px;
+  align-items: flex-end;
+}
+.hand-card {
+  width: 68px;
+  height: 96px;
+  border-radius: 7px;
+  background: var(--parchment);
+  border: 2px solid var(--border-ornate);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: space-between;
+  padding: 5px 4px;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+  user-select: none;
+  box-shadow: 0 2px 8px var(--shadow);
+  position: relative;
+}
+.hand-card:hover { transform: translateY(-10px); box-shadow: 0 12px 24px var(--shadow); }
+.hand-card.selected {
+  transform: translateY(-14px);
+  border-color: var(--gold-light);
+  box-shadow: 0 14px 30px var(--shadow), 0 0 0 2px rgba(201,149,42,0.5);
+}
+.hand-card.selected::after {
+  content: '✓';
+  position: absolute;
+  top: -8px; right: -8px;
+  width: 18px; height: 18px;
+  background: var(--gold-light);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.hand-card .hc-rank { font-weight: bold; font-size: 1rem; line-height: 1; font-family: 'Lato', system-ui, sans-serif; font-weight: 700; }
+.hand-card .hc-suit { font-size: 1.5rem; line-height: 1; }
+.hand-card .hc-rank-b { transform: rotate(180deg); font-weight: bold; font-size: 0.85rem; font-family: 'Lato', system-ui, sans-serif; font-weight: 700; }
+.hand-card.red { color: var(--red-suit); }
+.hand-card.black { color: var(--black-suit); }
+.hand-card.jester {
+  color: var(--forest);
+  background: linear-gradient(135deg, #f2e8d0, #e4f2d0);
+  border-color: var(--forest);
+}
+.hand-card.animal {
+  background: linear-gradient(135deg, var(--parchment), #e8f0d8);
+  border-color: #4a7a3a;
+}
+.empty-hand { color: #9a8060; font-style: italic; font-size: 0.9rem; align-self: center; }
+
+/* ── PLAYED CARDS ── */
+.played-area {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: 60px;
+}
+.played-card {
+  width: 54px; height: 76px;
+  border-radius: 5px;
+  background: var(--parchment);
+  border: 2px solid var(--border-ornate);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: 0.85rem;
+  box-shadow: 0 3px 10px var(--shadow);
+}
+.played-card.red { color: var(--red-suit); }
+.played-card.black { color: var(--black-suit); }
+.played-card .pc-rank { font-weight: bold; font-family: 'Lato', system-ui, sans-serif; font-weight: 700; font-size: 1rem; }
+.played-card .pc-suit { font-size: 1.1rem; }
+.played-attack {
+  font-family: 'Lato', system-ui, sans-serif; font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--crimson);
+  padding: 8px;
+  border-left: 2px solid var(--border-ornate);
+}
+
+/* ── ACTIONS ── */
+.actions-panel {
+  grid-column: 1 / -1;
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  padding: 10px 14px;
+}
+.step-badge {
+  font-family: 'Lato', system-ui, sans-serif; font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  margin-right: 6px;
+}
+button {
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 0.9rem;
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-primary {
+  background: #c0392b;
+  border-color: #a93226;
+  color: #fff;
+  font-weight: 700;
+}
+.btn-primary:hover { background: #a93226; }
+.btn-secondary {
+  background: var(--parchment-dark);
+  border-color: #bbb;
+  color: var(--ink);
+}
+.btn-secondary:hover { background: var(--parchment); }
+.btn-yield {
+  background: transparent;
+  border-color: #aaa;
+  color: #555;
+}
+.btn-yield:hover { background: #eee; }
+.btn-danger {
+  background: transparent;
+  border-color: #ddd;
+  color: #999;
+  margin-left: auto;
+}
+.btn-danger:hover { background: #fef0ef; border-color: #c0392b; color: #c0392b; }
+button:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+/* ── SPADES TRACKER ── */
+.spades-shield {
+  background: rgba(26,26,40,0.08);
+  border: 1px solid rgba(26,26,40,0.2);
+  border-radius: 3px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  color: #3a3a5a;
+  font-style: italic;
+}
+.spades-shield span { font-family: 'Lato', system-ui, sans-serif; font-weight: 700; font-size: 1rem; color: #3a3a7a; }
+
+/* ── LOG ── */
+.log-panel {
+  grid-column: 1 / -1;
+  max-height: 130px;
+  overflow-y: auto;
+  background: #1e1e1e !important;
+  border-color: #444 !important;
+}
+.log-panel::-webkit-scrollbar { width: 4px; }
+.log-panel::-webkit-scrollbar-thumb { background: #555; border-radius: 2px; }
+.log-entry { font-size: 0.82rem; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #bbb; }
+.log-entry:first-child { color: #eee; }
+.log-entry.good { color: #5cb85c; }
+.log-entry.bad { color: #e74c3c; }
+.log-entry.hearts { color: #e08080; }
+.log-entry.important { color: #f0c040; }
+
+/* ── JESTER PANEL ── */
+.jesters-row {
+  display: flex; gap: 8px; align-items: center;
+  padding: 6px 12px;
+  background: #f0f0ee;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+.jester-token {
+  width: 36px; height: 36px;
+  border-radius: 4px;
+  background: #fff;
+  border: 1px solid #ccc;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.jester-token:hover { background: #f5f5f5; border-color: #999; }
+.jester-token.used { opacity: 0.25; cursor: default; filter: grayscale(1); }
+.jester-token.used:hover { background: #fff; border-color: #ccc; }
+.jester-label { color: #666; font-size: 0.8rem; }
+
+/* ── OVERLAYS ── */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+}
+.overlay.hidden { display: none; }
+.overlay-box {
+  background: var(--parchment);
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 32px 40px;
+  text-align: center;
+  max-width: 380px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}
+.overlay-box h2 {
+  font-family: 'Lato', system-ui, sans-serif; font-weight: 700;
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+.overlay-box h2.win { color: var(--forest); }
+.overlay-box h2.lose { color: var(--crimson); }
+.overlay-box p { font-style: italic; color: #4a3a20; margin-bottom: 8px; font-size: 1rem; }
+.victory-rank {
+  font-family: 'Lato', system-ui, sans-serif; font-weight: 700;
+  font-size: 2.5rem;
+  margin: 12px 0;
+}
+.victory-rank.gold { color: #b8860b; }
+.victory-rank.silver { color: #708090; }
+.victory-rank.bronze { color: #8b4513; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  top: 16px; left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 14px 20px;
+  text-align: center;
+  z-index: 150;
+  max-width: 360px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  animation: toastIn 0.2s ease;
+}
+.toast.hidden { display: none; }
+.toast h3 { font-weight: 700; color: var(--crimson); font-size: 0.95rem; margin-bottom: 6px; }
+.toast p { font-size: 0.85rem; color: #333; margin-bottom: 10px; }
+@keyframes toastIn {
+  from { opacity:0; transform: translateX(-50%) translateY(-8px); }
+  to   { opacity:1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── DAMAGE PHASE ── */
+.damage-phase {
+  background: rgba(139,26,26,0.08);
+  border: 1px solid rgba(139,26,26,0.3);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: var(--crimson);
+  font-style: italic;
+}
+.dmg-remaining {
+  font-family: 'Lato', system-ui, sans-serif; font-weight: 700;
+  font-size: 1.4rem;
+  color: var(--crimson);
+}
+
+/* ── PHASE INDICATOR ── */
+.phase-bar {
+  grid-column: 1 / -1;
+  display: flex; gap: 0;
+  background: var(--parchment-dark);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.phase-step {
+  flex: 1;
+  padding: 6px 4px;
+  text-align: center;
+  font-size: 0.7rem;
+  color: #999;
+  border-right: 1px solid #ddd;
+  transition: all 0.2s;
+}
+.phase-step:last-child { border-right: none; }
+.phase-step.active {
+  background: #c0392b;
+  color: #fff;
+  font-weight: 700;
+}
+.phase-step .ps-num {
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: block;
+}
+
+/* ── LANGUAGE SWITCHER ── */
+.lang-switcher {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.lang-btn {
+  font-size: 0.82rem;
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background: transparent;
+  color: #aaa;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.lang-btn:hover { background: #3a3a3a; color: #eee; }
+.lang-btn.active {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #fff;
+  font-weight: 700;
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="title-bar">
+    <h1>Regicide</h1>
+    <p class="subtitle" id="uiSubtitle">Solo — Overthrow the corrupted monarchs</p>
+    <div class="lang-switcher">
+      <button class="lang-btn active" onclick="setLang('en')">🇬🇧 English</button>
+      <button class="lang-btn" onclick="setLang('it')">🇮🇹 Italiano</button>
+      <button class="lang-btn" onclick="setLang('fr')">🇫🇷 Français</button>
+    </div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="game-layout" id="gameLayout">
+
+    <!-- Phase bar -->
+    <div class="phase-bar" id="phaseBar">
+      <div class="phase-step active" id="ps1"><span class="ps-num">I</span><span data-i18n="phase1">Play a Card</span></div>
+      <div class="phase-step" id="ps2"><span class="ps-num">II</span><span data-i18n="phase2">Suit Power</span></div>
+      <div class="phase-step" id="ps3"><span class="ps-num">III</span><span data-i18n="phase3">Deal Damage</span></div>
+      <div class="phase-step" id="ps4"><span class="ps-num">IV</span><span data-i18n="phase4">Suffer Damage</span></div>
+    </div>
+
+    <!-- Enemy area -->
+    <div class="panel enemy-area" id="enemyArea">
+      <div class="enemy-card-wrap">
+        <div class="big-card face-up black" id="enemyCard">
+          <span class="card-rank" id="eRank">J</span>
+          <span class="card-suit" id="eSuit">♠</span>
+        </div>
+      </div>
+      <div class="enemy-info">
+        <div class="enemy-name" id="enemyName">Jack of Spades</div>
+        <div class="hp-bar-wrap">
+          <div class="hp-label"><span data-i18n="health">Health</span>: <span id="hpText">0 / 20</span></div>
+          <div class="hp-bar"><div class="hp-fill" id="hpFill" style="width:100%"></div></div>
+        </div>
+        <div class="enemy-stats">
+          <div class="enemy-stat">
+            <span class="enemy-stat-val" id="enemyAtk">10</span>
+            <span class="enemy-stat-lbl" data-i18n="attack">Attack</span>
+          </div>
+          <div class="enemy-stat">
+            <span class="enemy-stat-val" id="enemyEffAtk">10</span>
+            <span class="enemy-stat-lbl" data-i18n="effAttack">Eff. Attack</span>
+          </div>
+          <div class="enemy-stat">
+            <span class="enemy-stat-val" id="dmgDealt">0</span>
+            <span class="enemy-stat-lbl" data-i18n="dmgDealtLbl">Dmg Dealt</span>
+          </div>
+        </div>
+        <div style="margin-top:6px">
+          <span class="immunity-badge" id="immunityBadge">Immune to ♠ power</span>
+        </div>
+        <div class="spades-shield" style="margin-top:6px" id="spadesInfo">
+          ♠ Shield: <span id="spadesVal">0</span> accumulated
+        </div>
+      </div>
+
+      <!-- Castle -->
+      <div class="castle-info panel" style="min-width:90px; background: rgba(242,232,208,0.6)">
+        <div class="panel-title" data-i18n="castle">Castle</div>
+        <div class="castle-stack">
+          <div class="cs"></div><div class="cs"></div><div class="cs"></div>
+        </div>
+        <div class="castle-count" id="castleCount">11</div>
+        <div class="deck-sublabel" data-i18n="remaining">remaining</div>
+      </div>
+    </div>
+
+    <!-- Tavern deck col -->
+    <div class="decks-col panel" style="grid-column:1; grid-row:3">
+      <div class="panel-title" data-i18n="tavernDeck">Tavern Deck</div>
+      <div class="deck-display">
+        <div class="small-stack">
+          <div class="ss"></div><div class="ss"></div>
+          <div class="ss top" id="tavernTop" onclick="drawFromTavern()">🂠</div>
+        </div>
+        <div class="deck-count" id="tavernCount">40</div>
+        <div class="deck-sublabel" data-i18n="cards">cards</div>
+      </div>
+      <div style="height:12px"></div>
+      <div class="panel-title" data-i18n="discard">Discard</div>
+      <div class="deck-display">
+        <div class="small-stack">
+          <div class="ss"></div><div class="ss"></div>
+          <div class="ss discard-top empty-discard" id="discardTopCard" data-i18n-empty="empty">empty</div>
+        </div>
+        <div class="deck-count" id="discardCount">0</div>
+        <div class="deck-sublabel" data-i18n="discarded">discarded</div>
+        <div class="hearts-badge" id="heartsBadge" style="display:none">♥ <span id="hiddenCount">0</span> <span data-i18n="hiddenBelow">hidden below deck</span></div>
+      </div>
+    </div>
+
+    <!-- Played cards -->
+    <div class="panel" style="grid-column:2 / 4; grid-row:3; padding:10px 14px;">
+      <div class="panel-title" data-i18n="playedThisTurn">Played This Turn</div>
+      <div class="played-area" id="playedArea">
+        <span style="color:#9a8060; font-style:italic; font-size:0.85rem">No cards played yet</span>
+      </div>
+      <!-- Damage phase overlay info -->
+      <div id="dmgPhaseInfo" style="display:none; margin-top:8px">
+        <div class="damage-phase">
+          <span data-i18n="enemyStrikes">Enemy strikes for</span> <span class="dmg-remaining" id="dmgRemaining">0</span> <span data-i18n="damage">damage</span>.
+          <span data-i18n="selectToDiscard">Select cards to discard (total value ≥ damage).</span> <em><span data-i18n="animalJesterVal">Animal Companions = 1, Jester = 0</span></em>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hand -->
+    <div class="panel hand-panel" style="grid-column:1/-1; grid-row:4">
+      <div style="display:flex; align-items:center; gap:16px; margin-bottom:10px; flex-wrap:wrap">
+        <div class="panel-title" style="margin:0"><span data-i18n="yourHand">Your Hand</span> (<span id="handCount">0</span>/8)</div>
+        <div class="jesters-row">
+          <div class="jester-token" id="jester0" onclick="useJester(0)">🃏</div>
+          <div class="jester-token" id="jester1" onclick="useJester(1)">🃏</div>
+          <span class="jester-label" data-i18n="jestersLabel">Jesters (click to discard hand & refill)</span>
+        </div>
+      </div>
+      <div class="hand-area" id="handArea">
+        <span class="empty-hand" data-i18n="handEmpty">Your hand is empty</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions-panel panel" style="grid-column:1/-1; grid-row:5">
+      <span class="step-badge" id="actionLabel">Step I —</span>
+      <button class="btn-primary" id="btnPlay" onclick="playSelected()">⚔ <span data-i18n="btnAttack">Attack</span></button>
+      <button class="btn-yield" id="btnYield" onclick="doYield()" data-i18n="btnYield">Yield</button>
+      <button class="btn-secondary" id="btnDiscard" onclick="discardForDamage()" style="display:none">🛡 <span data-i18n="btnCoverDmg">Discard to Cover Damage</span></button>
+      <button class="btn-danger" onclick="confirmQuit()" data-i18n="btnAbandon">Abandon</button>
+    </div>
+
+    <!-- Log -->
+    <div class="panel log-panel" style="grid-column:1/-1; grid-row:6">
+      <div id="logArea"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Hearts toast -->
+<div class="toast hidden" id="heartsToast">
+  <h3 data-i18n="heartsPower">♥ Hearts Power</h3>
+  <p id="heartsToastMsg"></p>
+  <button class="btn-primary" onclick="dismissToast('heartsToast')" data-i18n="btnContinue">Continue</button>
+</div>
+
+<!-- Error toast -->
+<div class="toast hidden" id="errorToast" style="border-color:var(--crimson)">
+  <h3 style="color:var(--crimson)" data-i18n="invalidMove">⚠ Invalid Move</h3>
+  <p id="errorToastMsg"></p>
+  <button class="btn-secondary" onclick="dismissToast('errorToast')" data-i18n="btnDismiss">Dismiss</button>
+</div>
+
+<!-- End overlay -->
+<div class="overlay hidden" id="endOverlay">
+  <div class="overlay-box">
+    <h2 id="endTitle" class="win"></h2>
+    <p id="endFlavor"></p>
+    <div class="victory-rank" id="victoryRank"></div>
+    <p id="endSub" style="font-size:0.85rem; margin-bottom:16px"></p>
+    <button class="btn-primary" onclick="newGame()" data-i18n="btnPlayAgain">Play Again</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+//  INTERNATIONALISATION
+// ════════════════════════════════════════════════
+const TRANSLATIONS = {
+  en: {
+    subtitle: 'Solo — Overthrow the corrupted monarchs',
+    phase1: 'Play a Card', phase2: 'Suit Power', phase3: 'Deal Damage', phase4: 'Suffer Damage',
+    health: 'Health', attack: 'Attack', effAttack: 'Eff. Attack', dmgDealtLbl: 'Dmg Dealt',
+    castle: 'Castle', remaining: 'remaining', tavernDeck: 'Tavern Deck', cards: 'cards',
+    discard: 'Discard', discarded: 'discarded', hiddenBelow: 'hidden below deck',
+    playedThisTurn: 'Played This Turn', noCardsPlayed: 'No cards played yet',
+    enemyStrikes: 'Enemy strikes for', damage: 'damage',
+    selectToDiscard: 'Select cards to discard (total value ≥ damage).',
+    animalJesterVal: 'Animal Companions = 1, Jester = 0',
+    yourHand: 'Your Hand', handEmpty: 'Your hand is empty',
+    jestersLabel: 'Jesters (click to discard hand & refill)',
+    btnAttack: 'Attack', btnYield: 'Yield', btnCoverDmg: 'Discard to Cover Damage',
+    btnAbandon: 'Abandon', btnContinue: 'Continue', btnDismiss: 'Dismiss',
+    btnPlayAgain: 'Play Again',
+    heartsPower: '♥ Hearts Power', invalidMove: '⚠ Invalid Move',
+    empty: 'empty',
+    immuneTo: 'Immune to', power: 'power',
+    shieldAccum: 'accumulated',
+    stepLabel: 'Step',
+    phaseLabels: { 1:'Step I — Play a Card', 2:'Step II — Suit Powers', 3:'Step III — Damage', 4:'Step IV — Suffer Damage' },
+    suitNames: { '♠':'Spades','♥':'Hearts','♦':'Diamonds','♣':'Clubs' },
+    rankNames: { 'J':'Jack','Q':'Queen','K':'King','A':'Animal' },
+    of: 'of',
+    // Log messages
+    logNewGame: 'A new game begins. The corrupted court awaits.',
+    logDeal: (n) => `You draw ${n} cards to fill your hand.`,
+    logNewEnemy: (r,s) => `⚔ New enemy revealed: ${r} of ${s}!`,
+    logPlay: (cards) => `You play: ${cards}`,
+    logJesterPlay: '🃏 Jester played! Enemy immunity is cancelled for this fight.',
+    logSpades: (v,t) => `♠ Spades shield +${v} (total: ${t})`,
+    logClubs: '♣ Clubs: damage will be doubled.',
+    logHeartsEmpty: '♥ Hearts: discard pile empty, no healing.',
+    logHearts: (n) => `♥ Hearts: ${n} card${n!==1?'s':''} shuffled facedown beneath the Tavern deck. (No peeking!)`,
+    logHeartsToast: (n) => `${n} card${n!==1?'s':''} from the discard pile were shuffled and placed facedown beneath the Tavern deck — their identity is unknown.`,
+    logDiamonds: (n) => `♦ Diamonds: drew ${n} card${n!==1?'s':''}.`,
+    logDiamondsNone: '♦ Diamonds: no cards drawn (hand full or deck empty).',
+    logDamage: (dmg,r,s,tot,max) => `💥 Dealt ${dmg} damage to ${r} of ${s}. (Total: ${tot}/${max})`,
+    logDefeated: (r,s) => `👑 ${r} of ${s} defeated!`,
+    logExactKill: (r) => `✨ Exact kill! The ${r} is placed on top of the Tavern deck.`,
+    logAttack: (r,s,eff,base,sh) => `🗡 ${r} of ${s} attacks for ${eff} (${base} - ${sh} shield).`,
+    logShieldAll: '🛡 Shield absorbs all damage!',
+    logNoCardsNoJester: 'No cards in hand and no Jesters remaining. You perish.',
+    logHandEmptyUseJester: 'Hand is empty — use a Jester to refill before covering damage!',
+    logCantCover: (d) => `Cannot cover ${d} damage — not enough cards. You perish!`,
+    logCantCoverSel: (d) => `Cannot cover ${d} damage. You perish!`,
+    logNeedMore: (d,t) => `Need to cover ${d} damage — current selection covers ${t}. Select more cards.`,
+    logDiscardCover: (cards,d) => `Discarded ${cards} to cover ${d} damage.`,
+    logNoHandNoTavern: 'No cards in hand or Tavern — you cannot continue!',
+    logYield: 'You yield — moving directly to suffer damage.',
+    logAlreadyYielded: 'You already yielded last turn — you must play a card!',
+    logJesterUsed: (n,max) => `🃏 Jester ${n} used! Hand discarded. Drawing up to ${max}...`,
+    logJesterDrew: (n) => `Drew ${n} new cards.`,
+    logJesterNoCards: 'Still no cards after Jester. You perish.',
+    logDraw: 'Drew a card from the Tavern deck.',
+    logHandFull: 'Hand is full!',
+    logTavernEmpty: 'Tavern deck is empty!',
+    logWin: '🏆 Victory! The kingdom is saved!',
+    logDefeat: '☠ Defeat. The kingdom is lost.',
+    winTitle: 'Victory!', loseTitle: 'Defeated',
+    winFlavor: 'The corruption is purged. The kingdom is restored.',
+    loseFlavor: 'The corruption overwhelms you. The kingdom falls.',
+    goldVictory: '🥇 Gold Victory', goldSub: 'Flawless — no Jesters used!',
+    silverVictory: '🥈 Silver Victory', silverSub: '1 Jester used.',
+    bronzeVictory: '🥉 Bronze Victory', bronzeSub: '2 Jesters used.',
+    confirmQuit: 'Abandon this campaign?',
+    jesterPhaseError: 'Jester can only be used at the start of Step 1 or Step 4.',
+    jesterMustAlone: 'Jester must be played alone.',
+    animalOnePair: 'Animal Companion can only be paired with one other card.',
+    comboSameRank: 'Combo must be cards of the same rank.',
+    comboTooHigh: (t) => `Combo total is ${t} — must be 10 or less.`,
+  },
+  it: {
+    subtitle: 'Solo — Abbatti i monarchi corrotti',
+    phase1: 'Gioca una carta', phase2: 'Potere del seme', phase3: 'Infliggi danno', phase4: 'Subisci danno',
+    health: 'Salute', attack: 'Attacco', effAttack: 'Att. effettivo', dmgDealtLbl: 'Danno inflitto',
+    castle: 'Castello', remaining: 'rimanenti', tavernDeck: 'Mazzo Taverna', cards: 'carte',
+    discard: 'Scarti', discarded: 'scartate', hiddenBelow: 'nascosti sotto il mazzo',
+    playedThisTurn: 'Giocato questo turno', noCardsPlayed: 'Nessuna carta giocata',
+    enemyStrikes: 'Il nemico colpisce per', damage: 'danno',
+    selectToDiscard: 'Seleziona carte da scartare (valore totale ≥ danno).',
+    animalJesterVal: 'Compagni animali = 1, Giullare = 0',
+    yourHand: 'La tua mano', handEmpty: 'La tua mano è vuota',
+    jestersLabel: 'Giullari (clicca per scartare la mano e ricaricare)',
+    btnAttack: 'Attacca', btnYield: 'Cedi', btnCoverDmg: 'Scarta per coprire il danno',
+    btnAbandon: 'Abbandona', btnContinue: 'Continua', btnDismiss: 'Chiudi',
+    btnPlayAgain: 'Gioca ancora',
+    heartsPower: '♥ Potere dei Cuori', invalidMove: '⚠ Mossa non valida',
+    empty: 'vuoto',
+    immuneTo: 'Immune al', power: 'potere',
+    shieldAccum: 'accumulato',
+    phaseLabels: { 1:'Fase I — Gioca una carta', 2:'Fase II — Potere del seme', 3:'Fase III — Danno', 4:'Fase IV — Subisci danno' },
+    suitNames: { '♠':'Picche','♥':'Cuori','♦':'Quadri','♣':'Fiori' },
+    rankNames: { 'J':'Fante','Q':'Regina','K':'Re','A':'Animale' },
+    of: 'di',
+    logNewGame: 'Una nuova partita inizia. La corte corrotta ti attende.',
+    logDeal: (n) => `Peschi ${n} carte per riempire la mano.`,
+    logNewEnemy: (r,s) => `⚔ Nuovo nemico rivelato: ${r} di ${s}!`,
+    logPlay: (cards) => `Giochi: ${cards}`,
+    logJesterPlay: '🃏 Giullare giocato! L\'immunità del nemico è annullata.',
+    logSpades: (v,t) => `♠ Scudo Picche +${v} (totale: ${t})`,
+    logClubs: '♣ Fiori: il danno sarà raddoppiato.',
+    logHeartsEmpty: '♥ Cuori: scarti vuoti, nessuna guarigione.',
+    logHearts: (n) => `♥ Cuori: ${n} carta${n!==1?'e':''} rimessa sotto il mazzo a faccia in giù. (Niente sbirciare!)`,
+    logHeartsToast: (n) => `${n} carta${n!==1?'e':''} dagli scarti sono state mescolate e poste sotto il mazzo — la loro identità è sconosciuta.`,
+    logDiamonds: (n) => `♦ Quadri: pescata${n!==1?'e':''} ${n} carta${n!==1?'e':''}.`,
+    logDiamondsNone: '♦ Quadri: nessuna carta pescata (mano piena o mazzo vuoto).',
+    logDamage: (dmg,r,s,tot,max) => `💥 Inflitti ${dmg} danni a ${r} di ${s}. (Totale: ${tot}/${max})`,
+    logDefeated: (r,s) => `👑 ${r} di ${s} sconfitto!`,
+    logExactKill: (r) => `✨ Danno esatto! Il ${r} viene posto in cima al mazzo Taverna.`,
+    logAttack: (r,s,eff,base,sh) => `🗡 ${r} di ${s} attacca per ${eff} (${base} - ${sh} scudo).`,
+    logShieldAll: '🛡 Lo scudo assorbe tutti i danni!',
+    logNoCardsNoJester: 'Nessuna carta in mano e nessun Giullare rimasto. Sei sconfitto.',
+    logHandEmptyUseJester: 'Mano vuota — usa un Giullare per ricaricare prima di coprire il danno!',
+    logCantCover: (d) => `Non puoi coprire ${d} danni — carte insufficienti. Sei sconfitto!`,
+    logCantCoverSel: (d) => `Non puoi coprire ${d} danni. Sei sconfitto!`,
+    logNeedMore: (d,t) => `Devi coprire ${d} danni — la selezione copre solo ${t}. Seleziona altre carte.`,
+    logDiscardCover: (cards,d) => `Scartate ${cards} per coprire ${d} danni.`,
+    logNoHandNoTavern: 'Nessuna carta in mano o nella Taverna — non puoi continuare!',
+    logYield: 'Cedi — vai direttamente a subire il danno.',
+    logAlreadyYielded: 'Hai già ceduto l\'ultimo turno — devi giocare una carta!',
+    logJesterUsed: (n,max) => `🃏 Giullare ${n} usato! Mano scartata. Pesco fino a ${max}...`,
+    logJesterDrew: (n) => `Pescate ${n} nuove carte.`,
+    logJesterNoCards: 'Ancora nessuna carta dopo il Giullare. Sei sconfitto.',
+    logDraw: 'Pescata una carta dalla Taverna.',
+    logHandFull: 'Mano piena!',
+    logTavernEmpty: 'Mazzo Taverna vuoto!',
+    logWin: '🏆 Vittoria! Il regno è salvo!',
+    logDefeat: '☠ Sconfitta. Il regno è perduto.',
+    winTitle: 'Vittoria!', loseTitle: 'Sconfitto',
+    winFlavor: 'La corruzione è purificata. Il regno è restaurato.',
+    loseFlavor: 'La corruzione ti travolge. Il regno cade.',
+    goldVictory: '🥇 Vittoria d\'Oro', goldSub: 'Perfetto — nessun Giullare usato!',
+    silverVictory: '🥈 Vittoria d\'Argento', silverSub: '1 Giullare usato.',
+    bronzeVictory: '🥉 Vittoria di Bronzo', bronzeSub: '2 Giullari usati.',
+    confirmQuit: 'Abbandonare questa campagna?',
+    jesterPhaseError: 'Il Giullare può essere usato solo all\'inizio della Fase 1 o 4.',
+    jesterMustAlone: 'Il Giullare deve essere giocato da solo.',
+    animalOnePair: 'Il Compagno animale può essere abbinato solo a un\'altra carta.',
+    comboSameRank: 'Il combo deve essere composto da carte dello stesso valore.',
+    comboTooHigh: (t) => `Il totale del combo è ${t} — deve essere 10 o meno.`,
+  },
+  fr: {
+    subtitle: 'Solo — Renversez les monarques corrompus',
+    phase1: 'Jouer une carte', phase2: 'Pouvoir de couleur', phase3: 'Infliger des dégâts', phase4: 'Subir des dégâts',
+    health: 'Santé', attack: 'Attaque', effAttack: 'Att. effective', dmgDealtLbl: 'Dégâts infligés',
+    castle: 'Château', remaining: 'restantes', tavernDeck: 'Deck Taverne', cards: 'cartes',
+    discard: 'Défausse', discarded: 'défaussées', hiddenBelow: 'cachées sous le deck',
+    playedThisTurn: 'Joué ce tour', noCardsPlayed: 'Aucune carte jouée',
+    enemyStrikes: 'L\'ennemi frappe pour', damage: 'dégâts',
+    selectToDiscard: 'Sélectionnez des cartes à défausser (valeur totale ≥ dégâts).',
+    animalJesterVal: 'Compagnons animaux = 1, Joker = 0',
+    yourHand: 'Votre main', handEmpty: 'Votre main est vide',
+    jestersLabel: 'Jokers (cliquez pour défausser la main et recharger)',
+    btnAttack: 'Attaquer', btnYield: 'Céder', btnCoverDmg: 'Défausser pour couvrir les dégâts',
+    btnAbandon: 'Abandonner', btnContinue: 'Continuer', btnDismiss: 'Fermer',
+    btnPlayAgain: 'Rejouer',
+    heartsPower: '♥ Pouvoir Cœur', invalidMove: '⚠ Coup invalide',
+    empty: 'vide',
+    immuneTo: 'Immunisé contre', power: 'pouvoir',
+    shieldAccum: 'accumulé',
+    phaseLabels: { 1:'Étape I — Jouer une carte', 2:'Étape II — Pouvoir de couleur', 3:'Étape III — Dégâts', 4:'Étape IV — Subir des dégâts' },
+    suitNames: { '♠':'Piques','♥':'Cœurs','♦':'Carreaux','♣':'Trèfles' },
+    rankNames: { 'J':'Valet','Q':'Reine','K':'Roi','A':'Animal' },
+    of: 'de',
+    logNewGame: 'Une nouvelle partie commence. La cour corrompue vous attend.',
+    logDeal: (n) => `Vous piochez ${n} cartes pour remplir votre main.`,
+    logNewEnemy: (r,s) => `⚔ Nouvel ennemi révélé : ${r} de ${s} !`,
+    logPlay: (cards) => `Vous jouez : ${cards}`,
+    logJesterPlay: '🃏 Joker joué ! L\'immunité de l\'ennemi est annulée.',
+    logSpades: (v,t) => `♠ Bouclier Piques +${v} (total : ${t})`,
+    logClubs: '♣ Trèfles : les dégâts seront doublés.',
+    logHeartsEmpty: '♥ Cœurs : défausse vide, pas de guérison.',
+    logHearts: (n) => `♥ Cœurs : ${n} carte${n!==1?'s':''} mélangée${n!==1?'s':''} face cachée sous le deck Taverne. (Ne regardez pas !)`,
+    logHeartsToast: (n) => `${n} carte${n!==1?'s':''} de la défausse ont été mélangées et placées face cachée sous le deck Taverne — leur identité est inconnue.`,
+    logDiamonds: (n) => `♦ Carreaux : ${n} carte${n!==1?'s':''} piochée${n!==1?'s':''}.`,
+    logDiamondsNone: '♦ Carreaux : aucune carte piochée (main pleine ou deck vide).',
+    logDamage: (dmg,r,s,tot,max) => `💥 ${dmg} dégâts infligés à ${r} de ${s}. (Total : ${tot}/${max})`,
+    logDefeated: (r,s) => `👑 ${r} de ${s} vaincu !`,
+    logExactKill: (r) => `✨ Victoire exacte ! Le ${r} est placé sur le dessus du deck Taverne.`,
+    logAttack: (r,s,eff,base,sh) => `🗡 ${r} de ${s} attaque pour ${eff} (${base} - ${sh} bouclier).`,
+    logShieldAll: '🛡 Le bouclier absorbe tous les dégâts !',
+    logNoCardsNoJester: 'Aucune carte en main et plus de Jokers. Vous périssez.',
+    logHandEmptyUseJester: 'Main vide — utilisez un Joker pour recharger avant de couvrir les dégâts !',
+    logCantCover: (d) => `Impossible de couvrir ${d} dégâts — pas assez de cartes. Vous périssez !`,
+    logCantCoverSel: (d) => `Impossible de couvrir ${d} dégâts. Vous périssez !`,
+    logNeedMore: (d,t) => `Vous devez couvrir ${d} dégâts — la sélection ne couvre que ${t}. Sélectionnez plus de cartes.`,
+    logDiscardCover: (cards,d) => `Défaussé ${cards} pour couvrir ${d} dégâts.`,
+    logNoHandNoTavern: 'Aucune carte en main ou dans la Taverne — vous ne pouvez pas continuer !',
+    logYield: 'Vous cédez — passage direct à subir les dégâts.',
+    logAlreadyYielded: 'Vous avez déjà cédé au dernier tour — vous devez jouer une carte !',
+    logJesterUsed: (n,max) => `🃏 Joker ${n} utilisé ! Main défaussée. Pioche jusqu'à ${max}...`,
+    logJesterDrew: (n) => `Pioché ${n} nouvelles cartes.`,
+    logJesterNoCards: 'Toujours aucune carte après le Joker. Vous périssez.',
+    logDraw: 'Pioché une carte de la Taverne.',
+    logHandFull: 'Main pleine !',
+    logTavernEmpty: 'Deck Taverne vide !',
+    logWin: '🏆 Victoire ! Le royaume est sauvé !',
+    logDefeat: '☠ Défaite. Le royaume est perdu.',
+    winTitle: 'Victoire !', loseTitle: 'Défaite',
+    winFlavor: 'La corruption est purifiée. Le royaume est restauré.',
+    loseFlavor: 'La corruption vous submerge. Le royaume tombe.',
+    goldVictory: '🥇 Victoire Or', goldSub: 'Parfait — aucun Joker utilisé !',
+    silverVictory: '🥈 Victoire Argent', silverSub: '1 Joker utilisé.',
+    bronzeVictory: '🥉 Victoire Bronze', bronzeSub: '2 Jokers utilisés.',
+    confirmQuit: 'Abandonner cette campagne ?',
+    jesterPhaseError: 'Le Joker ne peut être utilisé qu\'au début de l\'étape 1 ou 4.',
+    jesterMustAlone: 'Le Joker doit être joué seul.',
+    animalOnePair: 'Le Compagnon animal ne peut être associé qu\'à une seule autre carte.',
+    comboSameRank: 'Le combo doit être composé de cartes du même rang.',
+    comboTooHigh: (t) => `Le total du combo est ${t} — doit être 10 ou moins.`,
+  }
+};
+
+let LANG = 'en';
+function t(key, ...args) {
+  const val = TRANSLATIONS[LANG][key];
+  if (typeof val === 'function') return val(...args);
+  return val ?? key;
+}
+
+function setLang(lang) {
+  LANG = lang;
+  // Update lang buttons
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.includes(lang === 'en' ? '🇬🇧' : lang === 'it' ? '🇮🇹' : '🇫🇷'));
+  });
+  // Update static data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (TRANSLATIONS[LANG][key] !== undefined && typeof TRANSLATIONS[LANG][key] === 'string') {
+      el.textContent = TRANSLATIONS[LANG][key];
+    }
+  });
+  // Update subtitle
+  document.getElementById('uiSubtitle').textContent = t('subtitle');
+  // Update discard empty text if empty
+  const discardTop = document.getElementById('discardTopCard');
+  if (discardTop && discardTop.classList.contains('empty-discard')) {
+    discardTop.textContent = t('empty');
+  }
+  // Re-render dynamic parts
+  if (typeof G !== 'undefined') render();
+}
+
+// ════════════════════════════════════════════════
+//  CARD DEFINITIONS
+// ════════════════════════════════════════════════
+const SUITS   = ['♠','♥','♦','♣'];
+const RED_SUITS = new Set(['♥','♦']);
+const RANKS   = ['2','3','4','5','6','7','8','9','10'];
+const FACE_VALUES  = { 'J': 10, 'Q': 15, 'K': 20 };
+const FACE_HEALTH  = { 'J': 20, 'Q': 30, 'K': 40 };
+const FACE_ATTACK  = { 'J': 10, 'Q': 15, 'K': 20 };
+const MAX_HAND = 8;
+// Use t('suitNames')[suit] for localised suit names
+function suitName(suit) { return t('suitNames')[suit] || suit; }
+function rankName(rank) { return t('rankNames')[rank] || rank; }
+
+function cardValue(card) {
+  if (card.rank === 'A') return 1; // Animal companion
+  if (card.rank === 'Jester') return 0;
+  if (FACE_VALUES[card.rank]) return FACE_VALUES[card.rank];
+  return parseInt(card.rank);
+}
+
+function cardId(card) { return card.rank + card.suit; }
+function isRed(card) { return RED_SUITS.has(card.suit); }
+function isAnimal(card) { return card.rank === 'A'; }
+function isJester(card) { return card.rank === 'Jester'; }
+function isFace(card) { return ['J','Q','K'].includes(card.rank); }
+
+function makeCard(rank, suit) { return { rank, suit }; }
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+// ════════════════════════════════════════════════
+//  GAME STATE
+// ════════════════════════════════════════════════
+let G; // global game state
+
+function newGame() {
+  // Castle deck: Jacks on top, then Queens, then Kings
+  const castle = [];
+  const jacks   = shuffle(SUITS.map(s => makeCard('J', s)));
+  const queens  = shuffle(SUITS.map(s => makeCard('Q', s)));
+  const kings   = shuffle(SUITS.map(s => makeCard('K', s)));
+  // Top of array = top of deck; jacks go first
+  castle.push(...kings, ...queens, ...jacks); // index 0 = bottom, last = top
+
+  // Tavern deck: 2-10 each suit + 4 animal companions
+  const tavern = [];
+  for (const suit of SUITS)
+    for (const rank of RANKS)
+      tavern.push(makeCard(rank, suit));
+  for (const suit of SUITS)
+    tavern.push(makeCard('A', suit)); // Animal companions
+
+  G = {
+    castle: castle,          // top = last element
+    tavern: shuffle(tavern), // top = last element
+    discard: [],             // top = last element (visible)
+    hand: [],
+    played: [],              // cards played this turn
+    enemy: null,             // current enemy card
+    enemyDmgTaken: 0,
+    spadesShield: 0,
+    immunityNegated: false,
+    jesters: [false, false], // false = available
+    jestersUsed: 0,
+    phase: 1,                // 1=play, 4=suffer
+    dmgRemaining: 0,
+    gameOver: false,
+    hiddenCount: 0,          // hearts mechanic: cards hidden under tavern
+    yielded: false,
+  };
+
+  // Draw first enemy
+  flipNextEnemy();
+
+  // Deal starting hand
+  while (G.hand.length < MAX_HAND && G.tavern.length > 0) {
+    G.hand.push(G.tavern.pop());
+  }
+
+  document.getElementById('endOverlay').classList.add('hidden');
+  document.getElementById('logArea').innerHTML = '';
+  document.getElementById('heartsToast').classList.add('hidden');
+
+  log(t('logNewGame'), 'important');
+  log(t('logDeal', G.hand.length));
+  render();
+}
+
+function flipNextEnemy() {
+  if (G.castle.length === 0) return false;
+  G.enemy = G.castle.pop();
+  G.enemyDmgTaken = 0;
+  G.spadesShield = 0;
+  G.immunityNegated = false;
+  G.played = [];
+  G.phase = 1;
+  G.yielded = false;
+  log(t('logNewEnemy', rankName(G.enemy.rank), suitName(G.enemy.suit)), 'important');
+  return true;
+}
+
+// ════════════════════════════════════════════════
+//  SELECTION
+// ════════════════════════════════════════════════
+let selected = new Set(); // indices into G.hand
+
+function toggleSelect(idx) {
+  if (G.gameOver) return;
+  if (G.phase === 4) {
+    // Damage phase: select to discard
+    selected.has(idx) ? selected.delete(idx) : selected.add(idx);
+  } else if (G.phase === 1) {
+    // Play phase: select combo or single
+    selected.has(idx) ? selected.delete(idx) : selected.add(idx);
+  }
+  renderHand();
+  updateButtons();
+}
+
+// ════════════════════════════════════════════════
+//  STEP 1 — PLAY
+// ════════════════════════════════════════════════
+function playSelected() {
+  if (selected.size === 0) return;
+  const cards = [...selected].map(i => G.hand[i]);
+
+  // Validate selection
+  const err = validatePlay(cards);
+  if (err) { showMsg(err); return; }
+
+  // Remove from hand
+  const sortedIdx = [...selected].sort((a,b) => b-a);
+  for (const i of sortedIdx) G.hand.splice(i, 1);
+  selected.clear();
+
+  G.played = cards;
+  G.phase = 2;
+  log(t('logPlay', cards.map(c => c.rank+c.suit).join(', ')));
+
+  // Execute step 2 → 3 → (maybe 4)
+  runStep2();
+}
+
+function validatePlay(cards) {
+  if (cards.length === 0) return 'Select at least one card.';
+
+  const hasJester = cards.some(isJester);
+  const hasAnimal = cards.some(isAnimal);
+  const nonAnimals = cards.filter(c => !isAnimal(c) && !isJester(c));
+
+  // Jester must be alone
+  if (hasJester && cards.length > 1) return t('jesterMustAlone');
+  if (hasJester) return null;
+
+  const animalCount = cards.filter(isAnimal).length;
+  const normalCount = cards.filter(c => !isAnimal(c)).length;
+
+  if (animalCount > 0) {
+    if (cards.length > 2) return t('animalOnePair');
+    return null;
+  }
+
+  if (cards.length > 1) {
+    const ranks = cards.map(c => c.rank);
+    if (!ranks.every(r => r === ranks[0])) return t('comboSameRank');
+    const total = cards.reduce((s, c) => s + cardValue(c), 0);
+    if (total > 10) return t('comboTooHigh', total);
+  }
+
+  return null;
+}
+
+// ════════════════════════════════════════════════
+//  STEP 2 — SUIT POWERS
+// ════════════════════════════════════════════════
+function runStep2() {
+  G.phase = 2;
+  render();
+
+  const cards = G.played;
+  if (cards.length === 1 && isJester(cards[0])) {
+    // Jester: negate immunity, skip 3&4
+    G.immunityNegated = true;
+    log(t('logJesterPlay'), 'good');
+    // End turn (skip 3 & 4)
+    G.played = [];
+    G.phase = 1;
+    G.yielded = false;
+    render();
+    return;
+  }
+
+  // Gather all suit powers
+  const suits = new Set(cards.map(c => c.suit));
+  const totalAtk = computeAttack(cards);
+
+  // Check enemy immunity
+  const enemySuit = G.enemy.suit;
+  const immune = (suit) => suit === enemySuit && !G.immunityNegated;
+
+  // Hearts (red → resolve first)
+  if (suits.has('♥') && !immune('♥')) {
+    resolveHearts(totalAtk);
+  }
+
+  // Diamonds (red)
+  if (suits.has('♦') && !immune('♦')) {
+    resolveDiamonds(totalAtk);
+  }
+
+  // Spades (black, takes effect step 4)
+  if (suits.has('♠') && !immune('♠')) {
+    G.spadesShield += totalAtk;
+    log(t('logSpades', totalAtk, G.spadesShield), 'good');
+  }
+
+  if (suits.has('♣') && !immune('♣')) {
+    log(t('logClubs'), 'good');
+  }
+
+  runStep3(cards, totalAtk, immune);
+}
+
+function computeAttack(cards) {
+  return cards.reduce((s, c) => s + cardValue(c), 0);
+}
+
+function resolveHearts(atk) {
+  if (G.discard.length === 0) { log(t('logHeartsEmpty')); return; }
+
+  const shuffled = shuffle([...G.discard]);
+  const count = Math.min(atk, shuffled.length);
+  const returning = shuffled.slice(0, count);
+  const remaining = shuffled.slice(count);
+
+  G.tavern = [...returning, ...G.tavern];
+  G.discard = remaining;
+  G.hiddenCount += count;
+
+  log(t('logHearts', count), 'hearts');
+
+  const msg = document.getElementById('heartsToastMsg');
+  msg.textContent = t('logHeartsToast', count);
+  document.getElementById('heartsToast').classList.remove('hidden');
+}
+
+function resolveDiamonds(atk) {
+  let drawn = 0;
+  for (let i = 0; i < atk; i++) {
+    if (G.hand.length >= MAX_HAND) break;
+    if (G.tavern.length === 0) break;
+    G.hand.push(G.tavern.pop());
+    drawn++;
+  }
+  if (drawn > 0) log(t('logDiamonds', drawn), 'good');
+  else log(t('logDiamondsNone'));
+}
+
+// ════════════════════════════════════════════════
+//  STEP 3 — DEAL DAMAGE
+// ════════════════════════════════════════════════
+function runStep3(cards, totalAtk, immune) {
+  G.phase = 3;
+  render();
+
+  const suits = new Set(cards.map(c => c.suit));
+  const clubsDouble = suits.has('♣') && !immune('♣');
+
+  let dmg = totalAtk;
+  if (clubsDouble) dmg *= 2;
+
+  G.enemyDmgTaken += dmg;
+  log(t('logDamage', dmg, rankName(G.enemy.rank), suitName(G.enemy.suit), G.enemyDmgTaken, FACE_HEALTH[G.enemy.rank]));
+
+  const maxHp = FACE_HEALTH[G.enemy.rank];
+
+  if (G.enemyDmgTaken >= maxHp) {
+    const exact = G.enemyDmgTaken === maxHp;
+    log(t('logDefeated', rankName(G.enemy.rank), suitName(G.enemy.suit)), 'good');
+
+    G.discard.push(...G.played);
+    G.played = [];
+
+    if (exact) {
+      log(t('logExactKill', rankName(G.enemy.rank)), 'good');
+      G.tavern.push(G.enemy);
+    } else {
+      // Enemy goes to discard
+      G.discard.push(G.enemy);
+    }
+
+    G.enemy = null;
+
+    // Flip next enemy
+    if (G.castle.length === 0) {
+      // Won!
+      endGame(true);
+      return;
+    }
+    flipNextEnemy();
+    G.phase = 1;
+    render();
+  } else {
+    // Step 4
+    runStep4();
+  }
+}
+
+// ════════════════════════════════════════════════
+//  STEP 4 — SUFFER DAMAGE
+// ════════════════════════════════════════════════
+function runStep4() {
+  G.phase = 4;
+  selected.clear();
+
+  const atk = FACE_ATTACK[G.enemy.rank];
+  const effectiveAtk = Math.max(0, atk - G.spadesShield);
+
+  G.dmgRemaining = effectiveAtk;
+
+  log(t('logAttack', rankName(G.enemy.rank), suitName(G.enemy.suit), effectiveAtk, atk, G.spadesShield), 'bad');
+
+  if (effectiveAtk === 0) {
+    log(t('logShieldAll'), 'good');
+    finishTurn();
+    return;
+  }
+
+  const hasUnusedJester = G.jesters.some(used => !used);
+  if (G.hand.length === 0 && !hasUnusedJester) {
+    log(t('logNoCardsNoJester'), 'bad');
+    endGame(false);
+    return;
+  }
+  if (G.hand.length === 0 && hasUnusedJester) {
+    log(t('logHandEmptyUseJester'), 'bad');
+  }
+
+  render();
+}
+
+function discardForDamage() {
+  if (selected.size === 0) {
+    const maxPossible = G.hand.reduce((s,c) => s + cardValue(c), 0);
+    if (maxPossible < G.dmgRemaining) {
+      log(t('logCantCover', G.dmgRemaining), 'bad');
+      endGame(false);
+    }
+    return;
+  }
+  const cards = [...selected].map(i => G.hand[i]);
+  const total = cards.reduce((s,c) => s + cardValue(c), 0);
+
+  if (total < G.dmgRemaining) {
+    const remaining = G.hand.filter((_, i) => !selected.has(i));
+    const maxPossible = total + remaining.reduce((s,c) => s + cardValue(c), 0);
+    if (maxPossible < G.dmgRemaining) {
+      log(t('logCantCoverSel', G.dmgRemaining), 'bad');
+      discardCards(cards);
+      endGame(false);
+      return;
+    }
+    showMsg(t('logNeedMore', G.dmgRemaining, total));
+    return;
+  }
+
+  log(t('logDiscardCover', cards.map(c=>c.rank+c.suit).join(', '), G.dmgRemaining));
+  discardCards(cards);
+  selected.clear();
+  finishTurn();
+}
+
+function discardCards(cards) {
+  // Remove from hand by value
+  for (const card of cards) {
+    const idx = G.hand.findIndex(c => cardId(c) === cardId(card));
+    if (idx !== -1) G.hand.splice(idx, 1);
+  }
+  G.discard.push(...cards);
+}
+
+function finishTurn() {
+  // Move played cards to discard (if any remain)
+  if (G.played.length > 0) {
+    G.discard.push(...G.played);
+    G.played = [];
+  }
+  G.phase = 1;
+  G.yielded = false;
+  selected.clear();
+
+  // Check loss: empty hand AND empty tavern (can't play or yield is impossible)
+  if (G.hand.length === 0 && G.tavern.length === 0) {
+    log(t('logNoHandNoTavern'), 'bad');
+    endGame(false);
+    return;
+  }
+
+  render();
+}
+
+// ════════════════════════════════════════════════
+//  YIELD
+// ════════════════════════════════════════════════
+function doYield() {
+  if (G.yielded) { showMsg(t('logAlreadyYielded')); return; }
+  log(t('logYield'));
+  G.yielded = true;
+  G.phase = 4;
+  G.played = [];
+  // Can use jester at start of step 4
+  runStep4();
+}
+
+// ════════════════════════════════════════════════
+//  JESTER POWER (solo)
+// ════════════════════════════════════════════════
+function useJester(idx) {
+  if (G.gameOver) return;
+  if (G.jesters[idx]) return; // already used
+  if (G.phase !== 1 && G.phase !== 4) { showMsg(t('jesterPhaseError')); return; }
+
+  G.jesters[idx] = true;
+  G.jestersUsed++;
+
+  G.discard.push(...G.hand);
+  G.hand = [];
+  log(t('logJesterUsed', idx+1, MAX_HAND), 'important');
+  while (G.hand.length < MAX_HAND && G.tavern.length > 0) {
+    G.hand.push(G.tavern.pop());
+  }
+  log(t('logJesterDrew', G.hand.length));
+
+  if (G.phase === 4 && G.hand.length === 0 && G.tavern.length === 0) {
+    log(t('logJesterNoCards'), 'bad');
+    endGame(false);
+    return;
+  }
+  render();
+}
+
+// ════════════════════════════════════════════════
+//  DRAW (manual, if somehow needed)
+// ════════════════════════════════════════════════
+function drawFromTavern() {
+  // Clicking tavern draws if hand not full and phase is 1
+  if (G.phase !== 1) return;
+  if (G.hand.length >= MAX_HAND) { showMsg(t('logHandFull')); return; }
+  if (G.tavern.length === 0) { showMsg(t('logTavernEmpty')); return; }
+  G.hand.push(G.tavern.pop());
+  log(t('logDraw'));
+  render();
+}
+
+// ════════════════════════════════════════════════
+//  GAME END
+// ════════════════════════════════════════════════
+function endGame(won) {
+  G.gameOver = true;
+  const overlay = document.getElementById('endOverlay');
+  const title   = document.getElementById('endTitle');
+  const flavor  = document.getElementById('endFlavor');
+  const rank    = document.getElementById('victoryRank');
+  const sub     = document.getElementById('endSub');
+
+  if (won) {
+    title.textContent = t('winTitle');
+    title.className = 'win';
+    flavor.textContent = t('winFlavor');
+    if (G.jestersUsed === 0) {
+      rank.textContent = t('goldVictory');
+      rank.className = 'victory-rank gold';
+      sub.textContent = t('goldSub');
+    } else if (G.jestersUsed === 1) {
+      rank.textContent = t('silverVictory');
+      rank.className = 'victory-rank silver';
+      sub.textContent = t('silverSub');
+    } else {
+      rank.textContent = t('bronzeVictory');
+      rank.className = 'victory-rank bronze';
+      sub.textContent = t('bronzeSub');
+    }
+    log(t('logWin'), 'good');
+  } else {
+    title.textContent = t('loseTitle');
+    title.className = 'lose';
+    flavor.textContent = t('loseFlavor');
+    rank.textContent = '☠';
+    rank.className = 'victory-rank';
+    rank.style.color = '#8b1a1a';
+    sub.textContent = '';
+    log(t('logDefeat'), 'bad');
+  }
+
+  overlay.classList.remove('hidden');
+  render();
+}
+
+function confirmQuit() {
+  if (confirm(t('confirmQuit'))) endGame(false);
+}
+
+// ════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════
+function render() {
+  renderEnemy();
+  renderDecks();
+  renderPlayed();
+  renderHand();
+  renderPhase();
+  updateButtons();
+}
+
+function renderEnemy() {
+  if (!G.enemy) return;
+  const card = G.enemy;
+  const maxHp = FACE_HEALTH[card.rank];
+  const hp = Math.max(0, maxHp - G.enemyDmgTaken);
+  const pct = hp / maxHp * 100;
+
+  document.getElementById('eRank').textContent = card.rank;
+  document.getElementById('eSuit').textContent = card.suit;
+  const ec = document.getElementById('enemyCard');
+  ec.className = `big-card face-up ${isRed(card) ? 'red' : 'black'}`;
+
+  document.getElementById('enemyName').innerHTML = `${rankName(card.rank)} ${t('of')} ${suitName(card.suit)} <span class="suit-icon">${card.suit}</span>`;
+  document.getElementById('hpText').textContent = `${hp} / ${maxHp}`;
+  const fill = document.getElementById('hpFill');
+  fill.style.width = pct + '%';
+  fill.className = 'hp-fill' + (pct < 35 ? ' danger' : '');
+
+  const atk = FACE_ATTACK[card.rank];
+  document.getElementById('enemyAtk').textContent = atk;
+  const effAtk = Math.max(0, atk - G.spadesShield);
+  document.getElementById('enemyEffAtk').textContent = effAtk;
+  document.getElementById('dmgDealt').textContent = G.enemyDmgTaken;
+
+  const ib = document.getElementById('immunityBadge');
+  ib.textContent = `${t('immuneTo')} ${card.suit} ${t('power')}`;
+  ib.className = 'immunity-badge' + (G.immunityNegated ? ' immunity-cancelled' : '');
+
+  document.getElementById('spadesVal').textContent = G.spadesShield;
+  const spadesInfo = document.getElementById('spadesInfo');
+  spadesInfo.innerHTML = `♠ Shield: <span id="spadesVal">${G.spadesShield}</span> ${t('shieldAccum')}`;
+  document.getElementById('castleCount').textContent = G.castle.length;
+}
+
+function renderDecks() {
+  // Tavern
+  const tc = document.getElementById('tavernCount');
+  tc.textContent = G.tavern.length;
+  const tt = document.getElementById('tavernTop');
+  if (G.tavern.length === 0) { tt.classList.add('empty'); tt.textContent = '∅'; }
+  else { tt.classList.remove('empty'); tt.textContent = '🂠'; }
+
+  // Discard
+  document.getElementById('discardCount').textContent = G.discard.length;
+  const dt = document.getElementById('discardTopCard');
+  if (G.discard.length === 0) {
+    dt.className = 'ss discard-top empty-discard';
+    dt.textContent = t('empty');
+  } else {
+    const top = G.discard[G.discard.length - 1];
+    dt.className = `ss discard-top ${isRed(top) ? 'red' : 'black'}`;
+    dt.innerHTML = `<span style="font-family:'Uncial Antiqua',serif;font-size:1.1rem;font-weight:bold">${top.rank}</span><span style="font-size:1.3rem">${top.suit}</span>`;
+  }
+
+  // Hearts badge
+  const hb = document.getElementById('heartsBadge');
+  if (G.hiddenCount > 0) {
+    hb.style.display = 'block';
+    document.getElementById('hiddenCount').textContent = G.hiddenCount;
+  } else {
+    hb.style.display = 'none';
+  }
+}
+
+function renderPlayed() {
+  const area = document.getElementById('playedArea');
+  if (G.played.length === 0) {
+    area.innerHTML = `<span style="color:#9a8060;font-style:italic;font-size:0.85rem">${t('noCardsPlayed')}</span>`;
+  } else {
+    const totalAtk = computeAttack(G.played);
+    const suits = new Set(G.played.map(c => c.suit));
+    const clubsDouble = suits.has('♣') && (!G.enemy || G.enemy.suit !== '♣' || G.immunityNegated);
+    const dmg = clubsDouble ? totalAtk * 2 : totalAtk;
+    area.innerHTML = G.played.map(c => `
+      <div class="played-card ${isRed(c)?'red':'black'}">
+        <span class="pc-rank">${isAnimal(c) ? '🐾' : c.rank}</span>
+        <span class="pc-suit">${c.suit}</span>
+      </div>`).join('') +
+      `<div class="played-attack">ATK ${totalAtk}${clubsDouble?` × 2 = ${dmg} dmg`:''}</div>`;
+  }
+
+  const dpi = document.getElementById('dmgPhaseInfo');
+  const dr  = document.getElementById('dmgRemaining');
+  if (G.phase === 4 && G.dmgRemaining > 0) {
+    dpi.style.display = 'block';
+    dr.textContent = G.dmgRemaining;
+  } else {
+    dpi.style.display = 'none';
+  }
+}
+
+function renderHand() {
+  const area = document.getElementById('handArea');
+  document.getElementById('handCount').textContent = G.hand.length;
+
+  if (G.hand.length === 0) {
+    area.innerHTML = `<span class="empty-hand">${t('handEmpty')}</span>`;
+  } else {
+    area.innerHTML = G.hand.map((card, i) => {
+      const sel = selected.has(i) ? ' selected' : '';
+      let cls = isJester(card) ? ' jester' : isAnimal(card) ? ` animal ${isRed(card) ? 'red' : 'black'}` : isRed(card) ? ' red' : ' black';
+      return `<div class="hand-card${cls}${sel}" onclick="toggleSelect(${i})">
+        <span class="hc-rank">${card.rank}</span>
+        <span class="hc-suit">${card.suit}</span>
+        <span class="hc-rank-b">${card.rank}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Jesters
+  for (let i = 0; i < 2; i++) {
+    const el = document.getElementById(`jester${i}`);
+    el.className = 'jester-token' + (G.jesters[i] ? ' used' : '');
+    el.title = G.jesters[i] ? 'Used' : 'Use Jester: Discard hand & refill to 8';
+  }
+}
+
+function renderPhase() {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById(`ps${i}`);
+    el.className = 'phase-step' + (G.phase === i ? ' active' : '');
+  }
+
+  const lbl = document.getElementById('actionLabel');
+  lbl.textContent = t('phaseLabels')[G.phase] + ' —';
+}
+
+function updateButtons() {
+  const btnPlay    = document.getElementById('btnPlay');
+  const btnYield   = document.getElementById('btnYield');
+  const btnDiscard = document.getElementById('btnDiscard');
+
+  btnPlay.style.display    = G.phase === 1 ? '' : 'none';
+  btnYield.style.display   = G.phase === 1 ? '' : 'none';
+  btnDiscard.style.display = G.phase === 4 ? '' : 'none';
+
+  btnPlay.disabled    = selected.size === 0 || G.phase !== 1 || G.gameOver;
+  btnYield.disabled   = G.gameOver;
+  btnDiscard.disabled = selected.size === 0 || G.gameOver;
+}
+
+// ════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════
+function log(msg, type = '') {
+  const area = document.getElementById('logArea');
+  const div = document.createElement('div');
+  div.className = `log-entry ${type}`;
+  div.textContent = msg;
+  area.insertBefore(div, area.firstChild);
+  while (area.children.length > 60) area.removeChild(area.lastChild);
+}
+
+function showMsg(msg) {
+  const t = document.getElementById('errorToast');
+  document.getElementById('errorToastMsg').textContent = msg;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 3000);
+}
+
+function dismissToast(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+// ════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════
+newGame();
+</script>
+</body>
+</html>
